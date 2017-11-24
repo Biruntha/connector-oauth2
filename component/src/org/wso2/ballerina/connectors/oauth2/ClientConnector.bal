@@ -13,7 +13,7 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
                                   string refreshToken, string refreshTokenEP) {
 
     endpoint<http:HttpClient> httpConnectorEP {
-             create http:HttpClient(baseUrl, {});
+             create http:HttpClient(baseUrl, {enableChunking:false});
     }
 
     string accessTokenValue;
