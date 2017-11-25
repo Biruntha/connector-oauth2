@@ -13,10 +13,11 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
                                   string refreshToken, string refreshTokenEP) {
 
     endpoint<http:HttpClient> httpConnectorEP {
-             create http:HttpClient(baseUrl, {enableChunking:false});
+             create http:HttpClient(baseUrl, {});
     }
 
     string accessTokenValue;
+    http:HttpConnectorError e;
 
     @Description { value:"Get with OAuth2 authentication"}
     @Param { value:"path: The endpoint path"}
@@ -24,19 +25,14 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
     @Return { value:"response object"}
     action get (string path, http:Request request) (http:Response) {
         http:Response response = {};
-        http:HttpConnectorError e;
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
         response, e = httpConnectorEP.get (path, request);
-        println("&&&&&&&&&&&&&&");
-        println(e);
+
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP);
-
             response, e = httpConnectorEP.get (path, request);
-            println("*************");
-            println(e);
         }
 
         return response;
@@ -51,12 +47,12 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
         http:Response response = {};
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
-        response, _ = httpConnectorEP.post (path, request);
+        response, e = httpConnectorEP.post (path, request);
 
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP);
-            response, _ = httpConnectorEP.post (path, request);
+            response, e = httpConnectorEP.post (path, request);
         }
 
         return response;
@@ -71,12 +67,12 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
         http:Response response = {};
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
-        response, _ = httpConnectorEP.put (path, request);
+        response, e = httpConnectorEP.put (path, request);
 
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP);
-            response, _ = httpConnectorEP.put (path, request);
+            response, e = httpConnectorEP.put (path, request);
         }
 
         return response;
@@ -91,12 +87,12 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
         http:Response response = {};
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
-        response, _ = httpConnectorEP.delete (path, request);
+        response, e = httpConnectorEP.delete (path, request);
 
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP);
-            response, _ = httpConnectorEP.delete (path, request);
+            response, e = httpConnectorEP.delete (path, request);
         }
 
         return response;
@@ -111,12 +107,12 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
         http:Response response = {};
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
-        response, _ = httpConnectorEP.patch (path, request);
+        response, e = httpConnectorEP.patch (path, request);
 
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP);
-            response, _ = httpConnectorEP.patch (path, request);
+            response, e = httpConnectorEP.patch (path, request);
         }
 
         return response;
@@ -140,7 +136,7 @@ function getAccessTokenFromRefreshToken (http:Request request, string accessToke
     endpoint<http:HttpClient> refreshTokenHTTPEP {
         create http:HttpClient("", {});
     }
-
+    http:HttpConnectorError e;
     http:Request refreshTokenRequest = {};
     http:Response refreshTokenResponse = {};
     string accessTokenFromRefreshTokenReq;
@@ -149,11 +145,15 @@ function getAccessTokenFromRefreshToken (http:Request request, string accessToke
     accessTokenFromRefreshTokenReq = refreshTokenEP + "?refresh_token=" + refreshToken
                                      + "&grant_type=refresh_token&client_secret="
                                      + clientSecret + "&client_id=" + clientId;
-
+    println("--------------------------------");
+    println(accessTokenFromRefreshTokenReq);
     refreshTokenRequest.setContentLength(0);
-    refreshTokenResponse, _ = refreshTokenHTTPEP.post(accessTokenFromRefreshTokenReq, refreshTokenRequest);
+    println("--------------------------------");
+    refreshTokenResponse, e = refreshTokenHTTPEP.post(accessTokenFromRefreshTokenReq, refreshTokenRequest);
     accessTokenFromRefreshTokenJSONResponse = refreshTokenResponse.getJsonPayload();
     accessToken = accessTokenFromRefreshTokenJSONResponse.access_token.toString();
     request.setHeader("Authorization", "Bearer " + accessToken);
+    println("--------------------------------");
+    println(e);
     return accessToken;
 }
