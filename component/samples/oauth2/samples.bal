@@ -10,11 +10,16 @@ function main (string[] args) {
     http:Request request = {};
     http:Response userProfileResponse = {};
     json userProfileJSONResponse;
+    http:HttpConnectorError e;
 
     if (args[0] == "get") {
         println("-----Calling get action-----");
-        userProfileResponse = clientConnector.get(args[7], request);
-        userProfileJSONResponse = userProfileResponse.getJsonPayload();
-        println(userProfileJSONResponse.toString());
+        userProfileResponse, e = clientConnector.get(args[7], request);
+        if(e == null) {
+            userProfileJSONResponse = userProfileResponse.getJsonPayload();
+            println(userProfileJSONResponse.toString());
+        } else {
+            println(e);
+        }
     }
 }
