@@ -45,15 +45,16 @@ public connector ClientConnector (string baseUrl, string accessToken, string cli
     @Param { value:"request: The request of the method"}
     @Return { value:"response object"}
     @Return { value:"Error occured during HTTP client invocation." }
-    action post (string path, http:Request request) (http:Response, http:HttpConnectorError) {
-
+    action post (string path, http:Request originalReq) (http:Response, http:HttpConnectorError) {
         http:Response response = {};
+        json incomingReq = originalReq.getJsonPayload();
+        http:Request request = {};
+        request.setJsonPayload(incomingReq);
 
         accessTokenValue = constructAuthHeader (request, accessTokenValue, accessToken);
         response, e = httpConnectorEP.post (path, request);
 
         if ((response.getStatusCode() == 401) && (refreshToken != "" || refreshToken != "null")) {
-            request = {};
             accessTokenValue = getAccessTokenFromRefreshToken(request, accessToken, clientId, clientSecret, refreshToken,
                                                               refreshTokenEP, refreshTokenPath);
 
